@@ -5,6 +5,7 @@ import "github.com/cloudysito/apirestgo/models"
 type JugadorRepository interface {
 	Guardar(jugador models.Jugador) error
 	ObtenerTodos() ([]models.Jugador, error)
+	ObtenerPorNombre(nombre string) (models.Jugador, error)
 }
 
 type MemoriaRepository struct {

@@ -49,3 +49,15 @@ func (r *MongoRepository) ObtenerTodos() ([]models.Jugador, error) {
 
 	return jugadores, nil
 }
+
+func (r *MongoRepository) ObtenerPorNombre(nombre string) (models.Jugador, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var jugador models.Jugador
+
+	filtro := bson.M{"nombre": nombre}
+	err := r.collection.FindOne(ctx, filtro).Decode(&jugador)
+
+	return jugador, err
+}

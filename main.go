@@ -35,6 +35,7 @@ func main() {
 
 	http.HandleFunc("/api/registro", handler.RegistrarJugadores)
 	http.HandleFunc("/api/jugadores", handler.ObtenerJugadores)
+	http.HandleFunc("/api/jugador/", handler.ObtenerJugador)
 
 	fmt.Println("Servidor iniciado en http://localhost:8080")
 	err = http.ListenAndServe(":8080", nil)

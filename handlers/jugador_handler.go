@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/cloudysito/apirestgo/models"
 	"github.com/cloudysito/apirestgo/repository"
@@ -54,4 +55,27 @@ func (h *JugadorHandler) ObtenerJugadores(w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(jugadores)
+}
+
+func (h *JugadorHandler) ObtenerJugador(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Método no permitido. Usa GET.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	nombre := strings.TrimPrefix(r.URL.Path, "/api/jugador/")
+
+	if nombre == "" {
+		http.Error(w, "Falta especificar el nombre del jugador", http.StatusBadRequest)
+		return
+	}
+
+	jugador, err := h.Repo.ObtenerPorNombre(nombre)
+	if err != nil {
+		http.Error(w, "Jugador no encontrado en la base de datos", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(jugador)
 }
