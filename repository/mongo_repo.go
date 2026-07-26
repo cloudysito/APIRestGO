@@ -15,23 +15,23 @@ type MongoRepository struct {
 
 func NewMongoRepository(client *mongo.Client) *MongoRepository {
 	return &MongoRepository{
-		collection: client.Database("gaming_db").Collection("jugadores"),
+		collection: client.Database("gaming_db").Collection("players"),
 	}
 }
 
-func (r *MongoRepository) Guardar(jugador models.Jugador) error {
+func (r *MongoRepository) Save(player models.Player) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := r.collection.InsertOne(ctx, jugador)
+	_, err := r.collection.InsertOne(ctx, player)
 	return err
 }
 
-func (r *MongoRepository) ObtenerTodos() ([]models.Jugador, error) {
+func (r *MongoRepository) GetAll() ([]models.Player, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var jugadores []models.Jugador
+	var players []models.Player
 
 	cursor, err := r.collection.Find(ctx, bson.M{})
 	if err != nil {
@@ -40,24 +40,24 @@ func (r *MongoRepository) ObtenerTodos() ([]models.Jugador, error) {
 	defer cursor.Close(ctx)
 
 	for cursor.Next(ctx) {
-		var j models.Jugador
-		if err := cursor.Decode(&j); err != nil {
+		var p models.Player
+		if err := cursor.Decode(&p); err != nil {
 			return nil, err
 		}
-		jugadores = append(jugadores, j)
+		players = append(players, p)
 	}
 
-	return jugadores, nil
+	return players, nil
 }
 
-func (r *MongoRepository) ObtenerPorNombre(nombre string) (models.Jugador, error) {
+func (r *MongoRepository) GetByName(name string) (models.Player, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var jugador models.Jugador
+	var player models.Player
 
-	filtro := bson.M{"nombre": nombre}
-	err := r.collection.FindOne(ctx, filtro).Decode(&jugador)
+	filter := bson.M{"name": name}
+	err := r.collection.FindOne(ctx, filter).Decode(&player)
 
-	return jugador, err
+	return player, err
 }

@@ -20,7 +20,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error cargando el archivo .env")
+		log.Fatal("Error loading the .env file")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -31,30 +31,30 @@ func main() {
 
 	client, err := mongo.Connect(clientOptions)
 	if err != nil {
-		fmt.Printf("Error al conectar a MongoDB: %v\n", err)
+		fmt.Printf("Error connecting to MongoDB: %v\n", err)
 		return
 	}
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		fmt.Printf("No se pudo hacer ping a MongoDB: %v\n", err)
+		fmt.Printf("Could not ping MongoDB: %v\n", err)
 		return
 	}
 
-	fmt.Println("Conectado exitosamente a MongoDB")
+	fmt.Println("Successfully connected to MongoDB")
 
 	repo := repository.NewMongoRepository(client)
-	handler := &handlers.JugadorHandler{Repo: repo}
+	handler := &handlers.PlayerHandler{Repo: repo}
 
-	http.Handle("/api/registro", middleware.ValidarToken(http.HandlerFunc(handler.RegistrarJugadores)))
-	http.HandleFunc("/api/jugadores", handler.ObtenerJugadores)
-	http.HandleFunc("/api/jugador/", handler.ObtenerJugador)
+	http.Handle("/api/register", middleware.ValidateToken(http.HandlerFunc(handler.RegisterPlayer)))
+	http.HandleFunc("/api/players", handler.GetPlayers)
+	http.HandleFunc("/api/player/", handler.GetPlayer)
 
-	puerto := os.Getenv("PUERTO")
-	fmt.Println("Servidor iniciado en http://localhost:" + puerto)
+	port := os.Getenv("PORT")
+	fmt.Println("Server started at http://localhost:" + port)
 
-	err = http.ListenAndServe(":"+puerto, nil)
+	err = http.ListenAndServe(":"+port, nil)
 	if err != nil {
-		fmt.Printf("Error al iniciar el servidor: %v\n", err)
+		fmt.Printf("Error starting the server: %v\n", err)
 	}
 }

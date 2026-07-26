@@ -11,79 +11,79 @@ import (
 	"github.com/cloudysito/apirestgo/repository"
 )
 
-type JugadorHandler struct {
-	Repo repository.JugadorRepository
+type PlayerHandler struct {
+	Repo repository.PlayerRepository
 }
 
-func (h *JugadorHandler) RegistrarJugadores(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) RegisterPlayer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Método no permitido. Usa POST.", http.StatusMethodNotAllowed)
+		http.Error(w, "Method not allowed. Use POST.", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var nuevoJugador models.Jugador
-	err := json.NewDecoder(r.Body).Decode(&nuevoJugador)
+	var newPlayer models.Player
+	err := json.NewDecoder(r.Body).Decode(&newPlayer)
 	if err != nil {
-		http.Error(w, "Error al decodificar el JSON", http.StatusBadRequest)
+		http.Error(w, "Error decoding JSON", http.StatusBadRequest)
 		return
 	}
 
-	err = h.Repo.Guardar(nuevoJugador)
+	err = h.Repo.Save(newPlayer)
 	if err != nil {
-		http.Error(w, "Error al guardar en la base de datos", http.StatusInternalServerError)
+		http.Error(w, "Error saving to database", http.StatusInternalServerError)
 		return
 	}
 
 	// GOROUTINE
-	go func(nombre string) {
-		fmt.Printf("\n[GOROUTINE] Calculando MMR inicial para %s...\n", nombre)
+	go func(name string) {
+		fmt.Printf("\n[GOROUTINE] Calculating initial MMR for %s...\n", name)
 		time.Sleep(5 * time.Second)
-		fmt.Printf("[GOROUTINE] ¡Cálculo terminado! Correo de bienvenida enviado a %s\n", nombre)
-	}(nuevoJugador.Nombre)
+		fmt.Printf("[GOROUTINE] Calculation completed! Welcome email sent to %s\n", name)
+	}(newPlayer.Name)
 
 	w.Header().Set("Content-Type", "application/json")
-	respuesta := map[string]string{
-		"mensaje": fmt.Sprintf("Jugador %s registrado exitosamente", nuevoJugador.Nombre),
-		"rango":   nuevoJugador.Rango,
+	response := map[string]string{
+		"message": fmt.Sprintf("Player %s registered successfully", newPlayer.Name),
+		"rank":    newPlayer.Rank,
 	}
-	json.NewEncoder(w).Encode(respuesta)
+	json.NewEncoder(w).Encode(response)
 }
 
-func (h *JugadorHandler) ObtenerJugadores(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Método no permitido. Usa GET.", http.StatusMethodNotAllowed)
+		http.Error(w, "Method not allowed. Use GET.", http.StatusMethodNotAllowed)
 		return
 	}
 
-	jugadores, err := h.Repo.ObtenerTodos()
+	players, err := h.Repo.GetAll()
 	if err != nil {
-		http.Error(w, "Error al obtener los jugadores", http.StatusInternalServerError)
+		http.Error(w, "Error getting players", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(jugadores)
+	json.NewEncoder(w).Encode(players)
 }
 
-func (h *JugadorHandler) ObtenerJugador(w http.ResponseWriter, r *http.Request) {
+func (h *PlayerHandler) GetPlayer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Método no permitido. Usa GET.", http.StatusMethodNotAllowed)
+		http.Error(w, "Method not allowed. Use GET.", http.StatusMethodNotAllowed)
 		return
 	}
 
-	nombre := strings.TrimPrefix(r.URL.Path, "/api/jugador/")
+	name := strings.TrimPrefix(r.URL.Path, "/api/player/")
 
-	if nombre == "" {
-		http.Error(w, "Falta especificar el nombre del jugador", http.StatusBadRequest)
+	if name == "" {
+		http.Error(w, "Player name must be specified", http.StatusBadRequest)
 		return
 	}
 
-	jugador, err := h.Repo.ObtenerPorNombre(nombre)
+	player, err := h.Repo.GetByName(name)
 	if err != nil {
-		http.Error(w, "Jugador no encontrado en la base de datos", http.StatusNotFound)
+		http.Error(w, "Player not found in the database", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(jugador)
+	json.NewEncoder(w).Encode(player)
 }

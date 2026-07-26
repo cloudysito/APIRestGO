@@ -5,12 +5,12 @@ import (
 	"os"
 )
 
-func ValidarToken(next http.Handler) http.HandlerFunc {
+func ValidateToken(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("Authorization")
-		tokenSecreto := os.Getenv("SECRET_TOKEN")
+		secretToken := os.Getenv("SECRET_TOKEN")
 
-		if token != tokenSecreto {
+		if token != secretToken {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}

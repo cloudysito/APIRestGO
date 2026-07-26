@@ -2,27 +2,27 @@ package repository
 
 import "github.com/cloudysito/apirestgo/models"
 
-type JugadorRepository interface {
-	Guardar(jugador models.Jugador) error
-	ObtenerTodos() ([]models.Jugador, error)
-	ObtenerPorNombre(nombre string) (models.Jugador, error)
+type PlayerRepository interface {
+	Save(player models.Player) error
+	GetAll() ([]models.Player, error)
+	GetByName(name string) (models.Player, error)
 }
 
-type MemoriaRepository struct {
-	usuarios []models.Jugador
+type InMemoryRepository struct {
+	players []models.Player
 }
 
-func NewMemoriaRepository() *MemoriaRepository {
-	return &MemoriaRepository{
-		usuarios: []models.Jugador{},
+func NewInMemoryRepository() *InMemoryRepository {
+	return &InMemoryRepository{
+		players: []models.Player{},
 	}
 }
 
-func (r *MemoriaRepository) Guardar(jugador models.Jugador) error {
-	r.usuarios = append(r.usuarios, jugador)
+func (r *InMemoryRepository) Save(player models.Player) error {
+	r.players = append(r.players, player)
 	return nil
 }
 
-func (r *MemoriaRepository) ObtenerTodos() ([]models.Jugador, error) {
-	return r.usuarios, nil
+func (r *InMemoryRepository) GetAll() ([]models.Player, error) {
+	return r.players, nil
 }
