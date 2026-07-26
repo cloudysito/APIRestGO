@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/cloudysito/apirestgo/models"
 	"github.com/cloudysito/apirestgo/repository"
@@ -32,6 +33,13 @@ func (h *JugadorHandler) RegistrarJugadores(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "Error al guardar en la base de datos", http.StatusInternalServerError)
 		return
 	}
+
+	// GOROUTINE
+	go func(nombre string) {
+		fmt.Printf("\n[GOROUTINE] Calculando MMR inicial para %s...\n", nombre)
+		time.Sleep(5 * time.Second)
+		fmt.Printf("[GOROUTINE] ¡Cálculo terminado! Correo de bienvenida enviado a %s\n", nombre)
+	}(nuevoJugador.Nombre)
 
 	w.Header().Set("Content-Type", "application/json")
 	respuesta := map[string]string{
