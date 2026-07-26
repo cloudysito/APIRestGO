@@ -26,3 +26,13 @@ func (r *InMemoryRepository) Save(player models.Player) error {
 func (r *InMemoryRepository) GetAll() ([]models.Player, error) {
 	return r.players, nil
 }
+
+func (r *InMemoryRepository) GetByName(name string) (models.Player, error) {
+	for _, player := range r.players {
+		if player.Name == name {
+			return player, nil
+		}
+	}
+
+	return models.Player{}, nil
+}
