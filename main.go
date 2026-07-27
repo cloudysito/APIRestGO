@@ -53,7 +53,16 @@ func main() {
 	http.Handle("/api/register", middleware.ValidateToken(http.HandlerFunc(handler.RegisterPlayer)))
 	http.HandleFunc("/api/players", handler.GetPlayers)
 	http.HandleFunc("/api/player/", handler.GetPlayer)
-	http.Handle("/api/factions", middleware.ValidateToken(http.HandlerFunc(factionHandler.CreateFaction)))
+	http.HandleFunc("/api/factions", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			factionHandler.GetAllFactions(w, r)
+		case http.MethodPost:
+			middleware.ValidateToken(http.HandlerFunc(factionHandler.CreateFaction)).ServeHTTP(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 
 	port := os.Getenv("PORT")
 	fmt.Println("Server started at http://localhost:" + port)
