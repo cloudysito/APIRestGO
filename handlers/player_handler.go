@@ -38,7 +38,7 @@ func (h *PlayerHandler) RegisterPlayer(w http.ResponseWriter, r *http.Request) {
 	go func(name string) {
 		fmt.Printf("\n[GOROUTINE] Calculating initial MMR for %s...\n", name)
 		time.Sleep(5 * time.Second)
-		fmt.Printf("[GOROUTINE] Calculation completed! Welcome email sent to %s\n", name)
+		fmt.Printf("[GOROUTINE] Calculation completed! Welcome %s\n", name)
 	}(newPlayer.Name)
 
 	w.Header().Set("Content-Type", "application/json")

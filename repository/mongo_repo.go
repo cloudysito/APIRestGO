@@ -15,7 +15,7 @@ type MongoRepository struct {
 
 func NewMongoRepository(client *mongo.Client) *MongoRepository {
 	return &MongoRepository{
-		collection: client.Database("gaming_db").Collection("players"),
+		collection: client.Database("apirestgo").Collection("players"),
 	}
 }
 

@@ -1,6 +1,10 @@
 package repository
 
-import "github.com/cloudysito/apirestgo/models"
+import (
+	"errors"
+
+	"github.com/cloudysito/apirestgo/models"
+)
 
 type PlayerRepository interface {
 	Save(player models.Player) error
@@ -34,5 +38,5 @@ func (r *InMemoryRepository) GetByName(name string) (models.Player, error) {
 		}
 	}
 
-	return models.Player{}, nil
+	return models.Player{}, errors.New("player not found")
 }
