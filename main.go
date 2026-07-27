@@ -13,8 +13,8 @@ import (
 	"github.com/cloudysito/apirestgo/repository"
 
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 	mongoURI := os.Getenv("MONGO_URI")
 	clientOptions := options.Client().ApplyURI(mongoURI)
 
-	client, err := mongo.Connect(clientOptions)
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		fmt.Printf("Error connecting to MongoDB: %v\n", err)
 		return
@@ -42,13 +42,18 @@ func main() {
 	}
 
 	fmt.Println("Successfully connected to MongoDB")
+	db := client.Database("apirestgo")
 
 	repo := repository.NewMongoRepository(client)
 	handler := &handlers.PlayerHandler{Repo: repo}
 
+	factionRepo := repository.NewFactionRepo(db)
+	factionHandler := handlers.NewFactionHandler(factionRepo)
+
 	http.Handle("/api/register", middleware.ValidateToken(http.HandlerFunc(handler.RegisterPlayer)))
 	http.HandleFunc("/api/players", handler.GetPlayers)
 	http.HandleFunc("/api/player/", handler.GetPlayer)
+	http.Handle("/api/factions", middleware.ValidateToken(http.HandlerFunc(factionHandler.CreateFaction)))
 
 	port := os.Getenv("PORT")
 	fmt.Println("Server started at http://localhost:" + port)
