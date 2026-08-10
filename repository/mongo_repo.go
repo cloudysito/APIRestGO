@@ -19,27 +19,27 @@ func NewMongoRepository(client *mongo.Client) *MongoRepository {
 	}
 }
 
-func (r *MongoRepository) Save(player models.Player) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (r *MongoRepository) Save(ctx context.Context, player *models.Player) error {
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	_, err := r.collection.InsertOne(ctx, player)
+	_, err := r.collection.InsertOne(cctx, *player)
 	return err
 }
 
-func (r *MongoRepository) GetAll() ([]models.Player, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (r *MongoRepository) GetAll(ctx context.Context) ([]models.Player, error) {
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	var players []models.Player
 
-	cursor, err := r.collection.Find(ctx, bson.M{})
+	cursor, err := r.collection.Find(cctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer cursor.Close(cctx)
 
-	for cursor.Next(ctx) {
+	for cursor.Next(cctx) {
 		var p models.Player
 		if err := cursor.Decode(&p); err != nil {
 			return nil, err
@@ -50,14 +50,36 @@ func (r *MongoRepository) GetAll() ([]models.Player, error) {
 	return players, nil
 }
 
-func (r *MongoRepository) GetByName(name string) (models.Player, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (r *MongoRepository) GetByName(ctx context.Context, name string) (models.Player, error) {
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	var player models.Player
 
 	filter := bson.M{"name": name}
-	err := r.collection.FindOne(ctx, filter).Decode(&player)
+	err := r.collection.FindOne(cctx, filter).Decode(&player)
 
 	return player, err
+}
+
+func (r *MongoRepository) GetRankStats(ctx context.Context) ([]models.RankStats, error) {
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$group", Value: bson.D{{Key: "_id", Value: "$rank"}, {Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}}}}},
+	}
+
+	cursor, err := r.collection.Aggregate(cctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(cctx)
+
+	var stats []models.RankStats
+	if err := cursor.All(cctx, &stats); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }

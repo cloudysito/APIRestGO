@@ -28,7 +28,7 @@ func (h *PlayerHandler) RegisterPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Repo.Save(newPlayer)
+	err = h.Repo.Save(r.Context(), &newPlayer)
 	if err != nil {
 		http.Error(w, "Error saving to database", http.StatusInternalServerError)
 		return
@@ -55,7 +55,7 @@ func (h *PlayerHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	players, err := h.Repo.GetAll()
+	players, err := h.Repo.GetAll(r.Context())
 	if err != nil {
 		http.Error(w, "Error getting players", http.StatusInternalServerError)
 		return
@@ -78,7 +78,7 @@ func (h *PlayerHandler) GetPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player, err := h.Repo.GetByName(name)
+	player, err := h.Repo.GetByName(r.Context(), name)
 	if err != nil {
 		http.Error(w, "Player not found in the database", http.StatusNotFound)
 		return
@@ -86,4 +86,21 @@ func (h *PlayerHandler) GetPlayer(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(player)
+}
+
+func (h *PlayerHandler) GetStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed. Use GET.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	stats, err := h.Repo.GetRankStats(r.Context())
+	if err != nil {
+		http.Error(w, "Error getting stats", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(stats)
 }
