@@ -36,7 +36,7 @@ func (h *PlayerHandler) RegisterPlayer(w http.ResponseWriter, r *http.Request) {
 
 	// GOROUTINE
 	go func(name string) {
-		fmt.Printf("\n[GOROUTINE] Calculating initial MMR for %s...\n", name)
+		fmt.Printf("\n[GOROUTINE] Calculating initial elo for %s...\n", name)
 		time.Sleep(5 * time.Second)
 		fmt.Printf("[GOROUTINE] Calculation completed! Welcome %s\n", name)
 	}(newPlayer.Name)
@@ -103,4 +103,47 @@ func (h *PlayerHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(stats)
+}
+
+func (h *PlayerHandler) UpdateRank(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed. Use PUT.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	name := strings.TrimPrefix(r.URL.Path, "/api/player/rank/")
+
+	var data map[string]string
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, "Error decoding JSON", http.StatusBadRequest)
+		return
+	}
+
+	newRank := data["rank"]
+	if err := h.Repo.UpdateRank(r.Context(), name, newRank); err != nil {
+		http.Error(w, "Error updating rank", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{
+		"message": fmt.Sprintf("Player %s rank updated to %s", name, newRank),
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *PlayerHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed. Use DELETE.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	name := strings.TrimPrefix(r.URL.Path, "/api/player/delete/")
+	if err := h.Repo.DeletePlayer(r.Context(), name); err != nil {
+		http.Error(w, "Error deleting player", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprintf("Player %s deleted successfully", name)})
 }

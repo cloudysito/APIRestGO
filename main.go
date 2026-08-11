@@ -52,8 +52,10 @@ func main() {
 
 	http.Handle("/api/register", middleware.ValidateToken(http.HandlerFunc(handler.RegisterPlayer)))
 	http.HandleFunc("/api/players", handler.GetPlayers)
-	http.HandleFunc("/api/player/", handler.GetPlayer)
 	http.HandleFunc("/api/stats", middleware.ValidateToken(http.HandlerFunc(handler.GetStats)))
+	http.Handle("/api/player/delete/", middleware.ValidateToken(http.HandlerFunc(handler.DeletePlayer)))
+	http.Handle("/api/player/rank/", middleware.ValidateToken(http.HandlerFunc(handler.UpdateRank)))
+	http.HandleFunc("/api/player/", handler.GetPlayer)
 	http.HandleFunc("/api/factions", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:

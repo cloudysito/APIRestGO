@@ -83,3 +83,23 @@ func (r *MongoRepository) GetRankStats(ctx context.Context) ([]models.RankStats,
 
 	return stats, nil
 }
+
+func (r *MongoRepository) UpdateRank(ctx context.Context, name string, newRank string) error {
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"name": name}
+	update := bson.M{"$set": bson.M{"rank": newRank}}
+
+	_, err := r.collection.UpdateOne(cctx, filter, update)
+	return err
+}
+
+func (r *MongoRepository) DeletePlayer(ctx context.Context, name string) error {
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"name": name}
+	_, err := r.collection.DeleteOne(cctx, filter)
+	return err
+}
