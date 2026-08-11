@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/cloudysito/apirestgo/models"
@@ -59,7 +60,14 @@ func (r *MongoRepository) GetByName(ctx context.Context, name string) (models.Pl
 	filter := bson.M{"name": name}
 	err := r.collection.FindOne(cctx, filter).Decode(&player)
 
-	return player, err
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return models.Player{}, errors.New("Player not found.")
+		}
+		return models.Player{}, err
+	}
+
+	return player, nil
 }
 
 func (r *MongoRepository) GetRankStats(ctx context.Context) ([]models.RankStats, error) {
@@ -91,8 +99,17 @@ func (r *MongoRepository) UpdateRank(ctx context.Context, name string, newRank s
 	filter := bson.M{"name": name}
 	update := bson.M{"$set": bson.M{"rank": newRank}}
 
-	_, err := r.collection.UpdateOne(cctx, filter, update)
-	return err
+	result, err := r.collection.UpdateOne(cctx, filter, update)
+
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return errors.New("Player not found.")
+	}
+
+	return nil
 }
 
 func (r *MongoRepository) DeletePlayer(ctx context.Context, name string) error {
@@ -100,6 +117,15 @@ func (r *MongoRepository) DeletePlayer(ctx context.Context, name string) error {
 	defer cancel()
 
 	filter := bson.M{"name": name}
-	_, err := r.collection.DeleteOne(cctx, filter)
-	return err
+	result, err := r.collection.DeleteOne(cctx, filter)
+
+	if err != nil {
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return errors.New("Player not found.")
+	}
+
+	return nil
 }

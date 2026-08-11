@@ -66,6 +66,9 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
+	http.Handle("/api/faction/delete/", middleware.ValidateToken(http.HandlerFunc(factionHandler.DeleteFaction)))
+	http.Handle("/api/faction/update/", middleware.ValidateToken(http.HandlerFunc(factionHandler.UpdateFaction)))
+	http.HandleFunc("/api/faction/", factionHandler.GetFaction)
 
 	port := os.Getenv("PORT")
 	fmt.Println("Server started at http://localhost:" + port)
