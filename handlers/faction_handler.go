@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
 	"github.com/cloudysito/apirestgo/models"
 	"github.com/cloudysito/apirestgo/repository"
+	"github.com/go-chi/chi/v5"
 )
 
 type FactionHandler struct {
@@ -18,11 +18,6 @@ func NewFactionHandler(repo *repository.FactionRepo) *FactionHandler {
 }
 
 func (h *FactionHandler) CreateFaction(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var faction models.Faction
 
 	if err := json.NewDecoder(r.Body).Decode(&faction); err != nil {
@@ -30,7 +25,7 @@ func (h *FactionHandler) CreateFaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.CreateFaction(context.TODO(), &faction); err != nil {
+	if err := h.repo.CreateFaction(r.Context(), &faction); err != nil {
 		http.Error(w, "Failed to create faction", http.StatusInternalServerError)
 		return
 	}
@@ -41,12 +36,7 @@ func (h *FactionHandler) CreateFaction(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FactionHandler) GetAllFactions(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	factions, err := h.repo.GetAllFactions(context.TODO())
+	factions, err := h.repo.GetAllFactions(r.Context())
 	if err != nil {
 		http.Error(w, "Failed to get factions", http.StatusInternalServerError)
 		return
@@ -57,18 +47,10 @@ func (h *FactionHandler) GetAllFactions(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *FactionHandler) GetFaction(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	// chi.URLParam extracts the {name} segment defined in the route
+	name := chi.URLParam(r, "name")
 
-	name := r.URL.Query().Get("name")
-	if name == "" {
-		http.Error(w, "Missing faction name", http.StatusBadRequest)
-		return
-	}
-
-	faction, err := h.repo.GetFactionByName(context.TODO(), name)
+	faction, err := h.repo.GetFactionByName(r.Context(), name)
 	if err != nil {
 		http.Error(w, "Failed to get faction", http.StatusInternalServerError)
 		return
@@ -79,16 +61,7 @@ func (h *FactionHandler) GetFaction(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FactionHandler) UpdateFaction(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	name := r.URL.Query().Get("name")
-	if name == "" {
-		http.Error(w, "Missing faction name", http.StatusBadRequest)
-		return
-	}
+	name := chi.URLParam(r, "name")
 
 	var updates map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
@@ -96,7 +69,7 @@ func (h *FactionHandler) UpdateFaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.UpdateFactionPartial(context.TODO(), name, updates); err != nil {
+	if err := h.repo.UpdateFactionPartial(r.Context(), name, updates); err != nil {
 		http.Error(w, "Failed to update faction", http.StatusInternalServerError)
 		return
 	}
@@ -106,18 +79,9 @@ func (h *FactionHandler) UpdateFaction(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FactionHandler) DeleteFaction(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	name := chi.URLParam(r, "name")
 
-	name := r.URL.Query().Get("name")
-	if name == "" {
-		http.Error(w, "Missing faction name", http.StatusBadRequest)
-		return
-	}
-
-	if err := h.repo.DeleteFaction(context.TODO(), name); err != nil {
+	if err := h.repo.DeleteFaction(r.Context(), name); err != nil {
 		http.Error(w, "Failed to delete faction", http.StatusInternalServerError)
 		return
 	}

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/cloudysito/apirestgo/models"
 	"github.com/cloudysito/apirestgo/repository"
+	"github.com/go-chi/chi/v5"
 )
 
 type PlayerHandler struct {
@@ -16,11 +16,6 @@ type PlayerHandler struct {
 }
 
 func (h *PlayerHandler) RegisterPlayer(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed. Use POST.", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var newPlayer models.Player
 	err := json.NewDecoder(r.Body).Decode(&newPlayer)
 	if err != nil {
@@ -42,6 +37,7 @@ func (h *PlayerHandler) RegisterPlayer(w http.ResponseWriter, r *http.Request) {
 	}(newPlayer.Name)
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	response := map[string]string{
 		"message": fmt.Sprintf("Player %s registered successfully", newPlayer.Name),
 		"rank":    newPlayer.Rank,
@@ -50,11 +46,6 @@ func (h *PlayerHandler) RegisterPlayer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PlayerHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed. Use GET.", http.StatusMethodNotAllowed)
-		return
-	}
-
 	players, err := h.Repo.GetAll(r.Context())
 	if err != nil {
 		http.Error(w, "Error getting players", http.StatusInternalServerError)
@@ -66,17 +57,8 @@ func (h *PlayerHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PlayerHandler) GetPlayer(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed. Use GET.", http.StatusMethodNotAllowed)
-		return
-	}
-
-	name := strings.TrimPrefix(r.URL.Path, "/api/player/")
-
-	if name == "" {
-		http.Error(w, "Player name must be specified", http.StatusBadRequest)
-		return
-	}
+	// chi.URLParam extracts the {name} segment defined in the route
+	name := chi.URLParam(r, "name")
 
 	player, err := h.Repo.GetByName(r.Context(), name)
 	if err != nil {
@@ -89,11 +71,6 @@ func (h *PlayerHandler) GetPlayer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PlayerHandler) GetStats(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed. Use GET.", http.StatusMethodNotAllowed)
-		return
-	}
-
 	stats, err := h.Repo.GetRankStats(r.Context())
 	if err != nil {
 		http.Error(w, "Error getting stats", http.StatusInternalServerError)
@@ -106,12 +83,7 @@ func (h *PlayerHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PlayerHandler) UpdateRank(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed. Use PUT.", http.StatusMethodNotAllowed)
-		return
-	}
-
-	name := strings.TrimPrefix(r.URL.Path, "/api/player/rank/")
+	name := chi.URLParam(r, "name")
 
 	var data map[string]string
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -133,17 +105,15 @@ func (h *PlayerHandler) UpdateRank(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PlayerHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed. Use DELETE.", http.StatusMethodNotAllowed)
-		return
-	}
+	name := chi.URLParam(r, "name")
 
-	name := strings.TrimPrefix(r.URL.Path, "/api/player/delete/")
 	if err := h.Repo.DeletePlayer(r.Context(), name); err != nil {
 		http.Error(w, "Error deleting player", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprintf("Player %s deleted successfully", name)})
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": fmt.Sprintf("Player %s deleted successfully", name),
+	})
 }
