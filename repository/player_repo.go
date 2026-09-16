@@ -14,6 +14,7 @@ type PlayerRepository interface {
 	GetRankStats(ctx context.Context) ([]models.RankStats, error)
 	UpdateRank(ctx context.Context, name string, newRank string) error
 	DeletePlayer(ctx context.Context, name string) error
+	UpdateMMR(ctx context.Context, name string, mmr int) error
 }
 
 type InMemoryRepository struct {
@@ -64,6 +65,16 @@ func (r *InMemoryRepository) DeletePlayer(ctx context.Context, name string) erro
 	for i, player := range r.players {
 		if player.Name == name {
 			r.players = append(r.players[:i], r.players[i+1:]...)
+			return nil
+		}
+	}
+	return errors.New("Player not found.")
+}
+
+func (r *InMemoryRepository) UpdateMMR(ctx context.Context, name string, mmr int) error {
+	for i, player := range r.players {
+		if player.Name == name {
+			r.players[i].MMR = mmr
 			return nil
 		}
 	}

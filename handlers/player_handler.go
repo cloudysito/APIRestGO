@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -35,11 +38,30 @@ func (h *PlayerHandler) RegisterPlayer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GOROUTINE
-	go func(name string) {
-		fmt.Printf("\n[GOROUTINE] Calculating initial elo for %s...\n", name)
-		time.Sleep(5 * time.Second)
-		fmt.Printf("[GOROUTINE] Calculation completed! Welcome %s\n", name)
-	}(newPlayer.Name)
+	go func(name string, rank string) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		baseMMR := map[string]int{
+			"Bronze":   800,
+			"Silver":   1100,
+			"Gold":     1400,
+			"Platinum": 1700,
+			"Diamond":  2000,
+		}
+
+		mmr, ok := baseMMR[rank]
+		if !ok {
+			mmr = 1000
+		}
+		mmr += rand.Intn(101) - 50
+
+		if err := h.Repo.UpdateMMR(ctx, name, mmr); err != nil {
+			log.Printf("[GOROUTINE] Error updating MMR for %s: %v\n", name, err)
+			return
+		}
+		log.Printf("[GOROUTINE] MMR set for %s: %d\n", name, mmr)
+	}(newPlayer.Name, newPlayer.Rank)
 
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]string{

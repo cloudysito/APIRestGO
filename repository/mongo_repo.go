@@ -129,3 +129,22 @@ func (r *MongoRepository) DeletePlayer(ctx context.Context, name string) error {
 
 	return nil
 }
+
+func (r *MongoRepository) UpdateMMR(ctx context.Context, name string, mmr int) error {
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"name": name}
+	update := bson.M{"$set": bson.M{"mmr": mmr}}
+	result, err := r.collection.UpdateOne(cctx, filter, update)
+	
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return errors.New("Player not found.")
+	}
+
+	return nil
+}
