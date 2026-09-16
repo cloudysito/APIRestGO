@@ -9,9 +9,9 @@ type Item struct {
 }
 
 type Player struct {
-	Name      string             `json:"name" bson:"name"`
-	Rank      string             `json:"rank" bson:"rank"`
-	MMR       int                `json:"mmr" bson:"mmr"`
-	Inventory []Item             `json:"inventory,omitempty" bson:"inventory,omitempty"`
-	FactionID primitive.ObjectID `json:"faction_id,omitempty" bson:"faction_id,omitempty"`
+	Name      string              `json:"name" bson:"name"`
+	Rank      string              `json:"rank" bson:"rank"`
+	MMR       int                 `json:"mmr" bson:"mmr"`
+	Inventory []Item              `json:"inventory,omitempty" bson:"inventory,omitempty"`
+	FactionID *primitive.ObjectID `json:"faction_id,omitempty" bson:"faction_id,omitempty"`
 }
