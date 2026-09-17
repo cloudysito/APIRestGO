@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/cloudysito/apirestgo/handlers"
@@ -53,20 +55,15 @@ func main() {
 	factionHandler := handlers.NewFactionHandler(factionRepo)
 
 	r := chi.NewRouter()
-
-	// Global middleware: runs on every request
-	r.Use(chimiddleware.Logger)    // logs method, path, status and duration
-	r.Use(chimiddleware.Recoverer) // recovers from panics and returns 500
+	r.Use(chimiddleware.Logger)
+	r.Use(chimiddleware.Recoverer)
 
 	r.Route("/api", func(r chi.Router) {
-
-		// --- Public routes (no auth required) ---
 		r.Get("/players", handler.GetPlayers)
 		r.Get("/players/{name}", handler.GetPlayer)
 		r.Get("/factions", factionHandler.GetAllFactions)
 		r.Get("/factions/{name}", factionHandler.GetFaction)
 
-		// --- Protected routes (ValidateToken middleware applied to this group) ---
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.ValidateToken)
 
@@ -84,8 +81,29 @@ func main() {
 	port := os.Getenv("PORT")
 	fmt.Println("Server started at http://localhost:" + port)
 
-	err = http.ListenAndServe(":"+port, r)
-	if err != nil {
-		fmt.Printf("Error starting the server: %v\n", err)
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: r,
 	}
+
+	go func() {
+		fmt.Println("Server is running on port", port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Could not listen on port %s: %v\n", port, err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+	fmt.Println("\nShutting down server...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	fmt.Println("Server exiting")
 }
