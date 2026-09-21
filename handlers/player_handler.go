@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/cloudysito/apirestgo/models"
@@ -37,19 +38,7 @@ func (h *PlayerHandler) RegisterPlayer(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		baseMMR := map[string]int{
-			"Bronze":   800,
-			"Silver":   1100,
-			"Gold":     1400,
-			"Platinum": 1700,
-			"Diamond":  2000,
-		}
-
-		mmr, ok := baseMMR[rank]
-		if !ok {
-			mmr = 1000
-		}
-		mmr += rand.Intn(101) - 50
+		mmr := calculateMMR(rank)
 
 		if err := h.Repo.UpdateMMR(ctx, name, mmr); err != nil {
 			log.Printf("[GOROUTINE] Error updating MMR for %s: %v\n", name, err)
@@ -79,9 +68,7 @@ func (h *PlayerHandler) GetPlayers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PlayerHandler) GetPlayer(w http.ResponseWriter, r *http.Request) {
-	// chi.URLParam extracts the {name} segment defined in the route
 	name := chi.URLParam(r, "name")
-
 	player, err := h.Repo.GetByName(r.Context(), name)
 	if err != nil {
 		http.Error(w, "Player not found in the database", http.StatusNotFound)
@@ -137,5 +124,74 @@ func (h *PlayerHandler) DeletePlayer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": fmt.Sprintf("Player %s deleted successfully", name),
+	})
+}
+
+func calculateMMR(rank string) int {
+	baseMMR := map[string]int{
+		"Bronze":   800,
+		"Silver":   1100,
+		"Gold":     1400,
+		"Platinum": 1700,
+		"Diamond":  2000,
+	}
+	mmr, ok := baseMMR[rank]
+	if !ok {
+		return 1000
+	}
+	return mmr + rand.Intn(101) - 50
+}
+
+func (h *PlayerHandler) RecalculateMMR(w http.ResponseWriter, r *http.Request) {
+	players, err := h.Repo.GetAll(r.Context())
+	if err != nil {
+		http.Error(w, "Error getting players", http.StatusInternalServerError)
+		return
+	}
+
+	const numWorkers = 5
+	jobs := make(chan models.Player, len(players))
+	results := make(chan string, len(players))
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			for player := range jobs {
+				log.Printf("[Worker %d] Processing %s", workerID, player.Name)
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				mmr := calculateMMR(player.Rank)
+
+				err := h.Repo.UpdateMMR(ctx, player.Name, mmr)
+				cancel()
+
+				if err != nil {
+					results <- fmt.Sprintf("FAILED: %s (%v)", player.Name, err)
+				} else {
+					results <- fmt.Sprintf("SUCCESS: %s MMR updated to %d", player.Name, mmr)
+				}
+			}
+		}(i)
+	}
+
+	for _, player := range players {
+		jobs <- player
+	}
+	close(jobs)
+
+	wg.Wait()
+	close(results)
+
+	var summary []string
+	for result := range results {
+		summary = append(summary, result)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": fmt.Sprintf("MMR recalculation completed for %d players", len(players)),
+		"summary": summary,
 	})
 }
