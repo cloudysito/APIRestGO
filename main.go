@@ -71,6 +71,7 @@ func main() {
 			r.Delete("/players/{name}", handler.DeletePlayer)
 			r.Put("/players/{name}/rank", handler.UpdateRank)
 			r.Get("/stats", handler.GetStats)
+			r.Post("/admin/recalculate-mmr", handler.RecalculateMMR)
 
 			r.Post("/factions", factionHandler.CreateFaction)
 			r.Put("/factions/{name}", factionHandler.UpdateFaction)
