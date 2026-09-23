@@ -84,6 +84,7 @@ Server will start at `http://localhost:8080`
 
 ## 🏗 Project Structure
 
+```
 apirestgo/
 ├── main.go # Application entry point, routing and graceful shutdown
 ├── go.mod # Module definition
@@ -101,7 +102,7 @@ apirestgo/
 ├── player.go # Player data model
 ├── faction.go # Faction data model
 └── stats.go # Statistics model
-
+```
 
 ## 🎯 Architecture
 
