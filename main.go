@@ -57,6 +57,8 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(chimiddleware.Logger)
 	r.Use(chimiddleware.Recoverer)
+	rateLimiter := middleware.NewRateLimiter(100, 20)
+	r.Use(rateLimiter.Middleware)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/players", handler.GetPlayers)
@@ -80,7 +82,7 @@ func main() {
 	})
 
 	port := os.Getenv("PORT")
-	fmt.Println("Server started at http://localhost:" + port)
+	fmt.Println("Server starting at http://localhost:" + port)
 
 	server := &http.Server{
 		Addr:    ":" + port,

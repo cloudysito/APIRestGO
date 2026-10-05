@@ -47,7 +47,6 @@ func (h *FactionHandler) GetAllFactions(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *FactionHandler) GetFaction(w http.ResponseWriter, r *http.Request) {
-	// chi.URLParam extracts the {name} segment defined in the route
 	name := chi.URLParam(r, "name")
 
 	faction, err := h.repo.GetFactionByName(r.Context(), name)
